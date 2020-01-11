@@ -2,11 +2,17 @@ public class Order {
     private Drink drink;
     private int sugar;
     private float moneyAmount;
+    private final boolean extraHot;
 
     public Order(Drink drink, int sugar, float moneyAmount) {
+        this(drink, sugar, moneyAmount, false);
+    }
+
+    public Order(Drink drink, int sugar, float moneyAmount, boolean extraHot) {
         this.drink = drink;
         this.sugar = sugar;
         this.moneyAmount = moneyAmount;
+        this.extraHot = extraHot;
     }
 
     public boolean isStickNeeded() {
@@ -23,6 +29,10 @@ public class Order {
 
     public int getSugar() {
         return sugar;
+    }
+
+    public boolean isExtraHot() {
+        return extraHot;
     }
 
     @Override

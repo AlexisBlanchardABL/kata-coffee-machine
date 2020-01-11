@@ -43,7 +43,10 @@ class CoffeeMachineTest {
                 Arguments.of(new Order(Drink.TEA, 1, 1.0f), "T:1:0"),
                 Arguments.of(new Order(Drink.TEA, 2, 0.4f), "T:2:0"),
                 Arguments.of(new Order(Drink.TEA, 0, 0.0f), "M:0.4€ is missing"),
-                Arguments.of(new Order(Drink.TEA, 0, 0.35f), "M:0.05€ is missing")
+                Arguments.of(new Order(Drink.TEA, 0, 0.35f), "M:0.05€ is missing"),
+                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 1.0f), "O::"),
+                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 0.0f), "M:0.6€ is missing"),
+                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 0.15f), "M:0.45€ is missing")
         );
     }
 

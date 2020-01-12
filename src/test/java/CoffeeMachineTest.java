@@ -15,11 +15,12 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CoffeeMachineTest {
+    private static final String SHORTAGE_NOTIFICATION_MESSAGE = " shortage, a notification has been sent to the maintenance company";
+
     private final SalesRepository salesRepository = new SalesRepository();
 
     @InjectMocks
@@ -27,6 +28,10 @@ class CoffeeMachineTest {
 
     @Mock
     private DrinkMaker drinkMaker;
+    @Mock
+    private BeverageQuantityChecker beverageQuantityChecker;
+    @Mock
+    private EmailNotifier emailNotifier;
 
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private PrintStream originalOut;
@@ -42,11 +47,13 @@ class CoffeeMachineTest {
         System.setOut(originalOut);
     }
 
-    @ParameterizedTest(name = "should send command {1} when ordering {0} ")
+    @ParameterizedTest(name = "when ordering {0} with shortage({1}), it should send command {2}")
     @MethodSource({"parameters"})
-    void ordering(Order order, String command) {
+    void ordering(Order order, boolean shortage, String command) {
+        mockBeverageQuantityChecker(order, shortage);
         assertDrinkCount(order.getDrink(), 0);
         coffeeMachine.order(order);
+        verifyEmailNotifierInteractions(shortage, order.getDrink());
         verify(drinkMaker).receive(command);
         verifyNoMoreInteractions(drinkMaker);
         assertDrinkCount(order.getDrink(), !command.startsWith("M:") ? 1 : 0);
@@ -54,29 +61,31 @@ class CoffeeMachineTest {
 
     static Stream<Arguments> parameters() {
         return Stream.of(
-                Arguments.of(new Order(Drink.COFFEE, 0, 1.0f), "C::"),
-                Arguments.of(new Order(Drink.COFFEE, 1, 1.0f), "C:1:0"),
-                Arguments.of(new Order(Drink.COFFEE, 2, 0.6f), "C:2:0"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 0, 1.0f), "H::"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 1, 1.0f), "H:1:0"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 2, 0.5f), "H:2:0"),
-                Arguments.of(new Order(Drink.TEA, 0, 1.0f), "T::"),
-                Arguments.of(new Order(Drink.TEA, 1, 1.0f), "T:1:0"),
-                Arguments.of(new Order(Drink.TEA, 2, 0.4f), "T:2:0"),
-                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 1.0f), "O::"),
+                Arguments.of(new Order(Drink.COFFEE, 0, 1.0f), false, "C::"),
+                Arguments.of(new Order(Drink.COFFEE, 1, 1.0f), false, "C:1:0"),
+                Arguments.of(new Order(Drink.COFFEE, 2, 0.6f), false, "C:2:0"),
+                Arguments.of(new Order(Drink.CHOCOLATE, 0, 1.0f), false, "H::"),
+                Arguments.of(new Order(Drink.CHOCOLATE, 1, 1.0f), false, "H:1:0"),
+                Arguments.of(new Order(Drink.CHOCOLATE, 2, 0.5f), false, "H:2:0"),
+                Arguments.of(new Order(Drink.TEA, 0, 1.0f), false, "T::"),
+                Arguments.of(new Order(Drink.TEA, 1, 1.0f), false, "T:1:0"),
+                Arguments.of(new Order(Drink.TEA, 2, 0.4f), false, "T:2:0"),
+                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 1.0f), false, "O::"),
 
-                Arguments.of(new Order(Drink.COFFEE, 0, 1.0f, true), "Ch::"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 1, 1.0f, true), "Hh:1:0"),
-                Arguments.of(new Order(Drink.TEA, 2, 0.4f, true), "Th:2:0"),
+                Arguments.of(new Order(Drink.COFFEE, 0, 1.0f, true), false, "Ch::"),
+                Arguments.of(new Order(Drink.CHOCOLATE, 1, 1.0f, true), false, "Hh:1:0"),
+                Arguments.of(new Order(Drink.TEA, 2, 0.4f, true), false, "Th:2:0"),
 
-                Arguments.of(new Order(Drink.COFFEE, 0, 0.0f), "M:0.6€ is missing"),
-                Arguments.of(new Order(Drink.COFFEE, 0, 0.3f), "M:0.3€ is missing"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 0, 0.0f), "M:0.5€ is missing"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 0, 0.4f), "M:0.1€ is missing"),
-                Arguments.of(new Order(Drink.TEA, 0, 0.0f), "M:0.4€ is missing"),
-                Arguments.of(new Order(Drink.TEA, 0, 0.35f), "M:0.05€ is missing"),
-                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 0.0f), "M:0.6€ is missing"),
-                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 0.15f), "M:0.45€ is missing")
+                Arguments.of(new Order(Drink.CHOCOLATE, 3, 0.5f), true, "M:MILK" + SHORTAGE_NOTIFICATION_MESSAGE),
+                Arguments.of(new Order(Drink.TEA, 3, 0.4f), true, "M:WATER" + SHORTAGE_NOTIFICATION_MESSAGE),
+                Arguments.of(new Order(Drink.COFFEE, 0, 0.0f), false, "M:0.6€ is missing"),
+                Arguments.of(new Order(Drink.COFFEE, 0, 0.3f), false, "M:0.3€ is missing"),
+                Arguments.of(new Order(Drink.CHOCOLATE, 0, 0.0f), false, "M:0.5€ is missing"),
+                Arguments.of(new Order(Drink.CHOCOLATE, 0, 0.4f), false, "M:0.1€ is missing"),
+                Arguments.of(new Order(Drink.TEA, 0, 0.0f), false, "M:0.4€ is missing"),
+                Arguments.of(new Order(Drink.TEA, 0, 0.35f), false, "M:0.05€ is missing"),
+                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 0.0f), false, "M:0.6€ is missing"),
+                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 0.15f), false, "M:0.45€ is missing")
         );
     }
 
@@ -105,6 +114,8 @@ class CoffeeMachineTest {
     @Test
     void given_some_orders_were_made_when_displaying_the_report_it_should_print_it_on_the_console() {
         // Given
+        when(beverageQuantityChecker.isEmpty(anyString())).thenReturn(false);
+
         orderA(Drink.COFFEE);
         orderA(Drink.COFFEE);
         orderA(Drink.TEA);
@@ -150,4 +161,21 @@ class CoffeeMachineTest {
                 .contains("ORANGE_JUICE: " + orangeJuiceCount)
                 .contains("Total revenue: " + totalRevenue + "€");
     }
+
+    private void mockBeverageQuantityChecker(Order order, boolean shortage) {
+        Drink drink = order.getDrink();
+        if (Drink.ORANGE_JUICE != drink && !drink.costMoreThan(order.getMoneyAmount())) {
+            when(beverageQuantityChecker.isEmpty(drink.getBase().name())).thenReturn(shortage);
+        }
+    }
+
+    private void verifyEmailNotifierInteractions(boolean shortage, Drink drink) {
+        if (shortage) {
+            verify(emailNotifier).notifyMissingDrink(drink.getBase().name());
+            verifyNoMoreInteractions(emailNotifier);
+        } else {
+            verifyNoInteractions(emailNotifier);
+        }
+    }
+
 }

@@ -1,3 +1,5 @@
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -7,27 +9,47 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class CoffeeMachineTest {
+    private final SalesRepository salesRepository = new SalesRepository();
 
     @InjectMocks
-    private CoffeeMachine coffeeMachine = new CoffeeMachine();
+    private CoffeeMachine coffeeMachine = new CoffeeMachine(salesRepository);
 
     @Mock
     private DrinkMaker drinkMaker;
 
+    private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    private PrintStream originalOut;
+
+    @BeforeEach
+    void setup() {
+        originalOut = System.out;
+        System.setOut(new PrintStream(outContent));
+    }
+
+    @AfterEach
+    public void restoreSystemOut() {
+        System.setOut(originalOut);
+    }
+
     @ParameterizedTest(name = "should send command {1} when ordering {0} ")
     @MethodSource({"parameters"})
     void ordering(Order order, String command) {
+        assertDrinkCount(order.getDrink(), 0);
         coffeeMachine.order(order);
         verify(drinkMaker).receive(command);
         verifyNoMoreInteractions(drinkMaker);
+        assertDrinkCount(order.getDrink(), !command.startsWith("M:") ? 1 : 0);
     }
 
     static Stream<Arguments> parameters() {
@@ -74,4 +96,58 @@ class CoffeeMachineTest {
         assertThrows(IllegalArgumentException.class, () -> coffeeMachine.order(new Order(Drink.ORANGE_JUICE, 1, 1.0f)));
     }
 
+    @Test
+    void given_no_orders_were_made_when_displaying_the_report_it_should_print_it_on_the_console() {
+        coffeeMachine.displayReport();
+        assertReport(0, 0, 0, 0, 0.0f);
+    }
+
+    @Test
+    void given_some_orders_were_made_when_displaying_the_report_it_should_print_it_on_the_console() {
+        // Given
+        orderA(Drink.COFFEE);
+        orderA(Drink.COFFEE);
+        orderA(Drink.TEA);
+        orderA(Drink.TEA);
+        orderA(Drink.ORANGE_JUICE);
+        orderA(Drink.ORANGE_JUICE);
+        orderA(Drink.CHOCOLATE);
+        orderA(Drink.CHOCOLATE);
+
+        // When
+        coffeeMachine.displayReport();
+
+        // Then
+        assertReport(2, 2, 2, 2, 4.2f);
+    }
+
+    @Test
+    void given_an_order_with_no_money_when_displaying_the_report_it_should_not_be_printed_in_the_report() {
+        // Given
+        coffeeMachine.order(new Order(Drink.COFFEE, 0, 0));
+
+        // When
+        coffeeMachine.displayReport();
+
+        // Then
+        assertReport(0, 0, 0, 0, 0f);
+    }
+
+    private void assertDrinkCount(Drink drink, int expected) {
+        assertThat(salesRepository.getDrinkCount(drink)).isEqualTo(expected);
+    }
+
+    private void orderA(Drink drink) {
+        coffeeMachine.order(new Order(drink, 0, drink.getPrice()));
+    }
+
+    private void assertReport(int teaCount, int chocolateCount, int coffeeCount, int orangeJuiceCount, float totalRevenue) {
+        assertThat(outContent.toString())
+                .contains("Beverage sales report:")
+                .contains("TEA: " + teaCount)
+                .contains("CHOCOLATE: " + chocolateCount)
+                .contains("COFFEE: " + coffeeCount)
+                .contains("ORANGE_JUICE: " + orangeJuiceCount)
+                .contains("Total revenue: " + totalRevenue + "€");
+    }
 }

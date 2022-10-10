@@ -6,9 +6,9 @@ public enum Drink {
     COFFEE("C", 0.6f, Liquid.WATER),
     ORANGE_JUICE("O", 0.6f, null);
 
-    private String code;
-    private float price;
-    private Liquid base;
+    private final String code;
+    private final float price;
+    private final Liquid base;
 
     Drink(String code, float price, Liquid base) {
         this.code = code;

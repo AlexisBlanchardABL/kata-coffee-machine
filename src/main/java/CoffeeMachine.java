@@ -59,4 +59,5 @@ public class CoffeeMachine {
     private boolean isShortageIssue(Liquid base) {
         return Objects.nonNull(base) && beverageQuantityChecker.isEmpty(base.name());
     }
+
 }

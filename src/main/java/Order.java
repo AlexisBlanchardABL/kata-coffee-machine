@@ -1,7 +1,7 @@
 public class Order {
-    private Drink drink;
-    private int sugar;
-    private float moneyAmount;
+    private final Drink drink;
+    private final int sugar;
+    private final float moneyAmount;
     private final boolean extraHot;
 
     public Order(Drink drink, int sugar, float moneyAmount) {

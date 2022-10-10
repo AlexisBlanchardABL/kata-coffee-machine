@@ -7,12 +7,23 @@ public class CoffeeMachine {
     private static final String SHORTAGE_NOTIFICATION_MESSAGE = " shortage, a notification has been sent to the maintenance company";
 
     private final SalesRepository salesRepository;
-    private DrinkMaker drinkMaker;
-    private BeverageQuantityChecker beverageQuantityChecker;
-    private EmailNotifier emailNotifier;
+    private final DrinkMaker drinkMaker;
+    private final BeverageQuantityChecker beverageQuantityChecker;
+    private final EmailNotifier emailNotifier;
+    private final Printer printer;
 
-    public CoffeeMachine(SalesRepository salesRepository) {
+    public CoffeeMachine(
+            SalesRepository salesRepository,
+            DrinkMaker drinkMaker,
+            BeverageQuantityChecker beverageQuantityChecker,
+            EmailNotifier emailNotifier,
+            Printer printer
+    ) {
         this.salesRepository = salesRepository;
+        this.drinkMaker = drinkMaker;
+        this.beverageQuantityChecker = beverageQuantityChecker;
+        this.emailNotifier = emailNotifier;
+        this.printer = printer;
     }
 
     public void order(Order order) {
@@ -51,9 +62,9 @@ public class CoffeeMachine {
     }
 
     public void displayReport() {
-        System.out.println("Beverage sales report:");
-        EnumSet.allOf(Drink.class).forEach((drink) -> System.out.println(drink.name() + ": " + salesRepository.getDrinkCount(drink)));
-        System.out.println("Total revenue: " + salesRepository.getEarnedMoney() + "€");
+        printer.print("Beverage sales report:");
+        EnumSet.allOf(Drink.class).forEach((drink) -> printer.print(drink.name() + ": " + salesRepository.getDrinkCount(drink)));
+        printer.print("Total revenue: " + salesRepository.getEarnedMoney() + "€");
     }
 
     private boolean isShortageIssue(Liquid base) {

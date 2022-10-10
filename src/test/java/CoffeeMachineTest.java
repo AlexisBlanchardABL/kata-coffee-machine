@@ -1,19 +1,14 @@
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -21,10 +16,7 @@ import static org.mockito.Mockito.*;
 class CoffeeMachineTest {
     private static final String SHORTAGE_NOTIFICATION_MESSAGE = " shortage, a notification has been sent to the maintenance company";
 
-    private final SalesRepository salesRepository = new SalesRepository();
-
-    @InjectMocks
-    private CoffeeMachine coffeeMachine = new CoffeeMachine(salesRepository);
+    private CoffeeMachine coffeeMachine;
 
     @Mock
     private DrinkMaker drinkMaker;
@@ -32,31 +24,28 @@ class CoffeeMachineTest {
     private BeverageQuantityChecker beverageQuantityChecker;
     @Mock
     private EmailNotifier emailNotifier;
-
-    private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-    private PrintStream originalOut;
+    @Mock
+    private Printer printer;
 
     @BeforeEach
     void setup() {
-        originalOut = System.out;
-        System.setOut(new PrintStream(outContent));
-    }
-
-    @AfterEach
-    public void restoreSystemOut() {
-        System.setOut(originalOut);
+        coffeeMachine = new CoffeeMachine(
+                new SalesRepository(),
+                drinkMaker,
+                beverageQuantityChecker,
+                emailNotifier,
+                printer
+        );
     }
 
     @ParameterizedTest(name = "when ordering {0} with shortage({1}), it should send command {2}")
     @MethodSource({"parameters"})
     void ordering(Order order, boolean shortage, String command) {
         mockBeverageQuantityChecker(order, shortage);
-        assertDrinkCount(order.getDrink(), 0);
         coffeeMachine.order(order);
         verifyEmailNotifierInteractions(shortage, order.getDrink());
         verify(drinkMaker).receive(command);
         verifyNoMoreInteractions(drinkMaker);
-        assertDrinkCount(order.getDrink(), !command.startsWith("M:") ? 1 : 0);
     }
 
     static Stream<Arguments> parameters() {
@@ -144,22 +133,17 @@ class CoffeeMachineTest {
         assertReport(0, 0, 0, 0, 0f);
     }
 
-    private void assertDrinkCount(Drink drink, int expected) {
-        assertThat(salesRepository.getDrinkCount(drink)).isEqualTo(expected);
-    }
-
     private void orderA(Drink drink) {
         coffeeMachine.order(new Order(drink, 0, drink.getPrice()));
     }
 
     private void assertReport(int teaCount, int chocolateCount, int coffeeCount, int orangeJuiceCount, float totalRevenue) {
-        assertThat(outContent.toString())
-                .contains("Beverage sales report:")
-                .contains("TEA: " + teaCount)
-                .contains("CHOCOLATE: " + chocolateCount)
-                .contains("COFFEE: " + coffeeCount)
-                .contains("ORANGE_JUICE: " + orangeJuiceCount)
-                .contains("Total revenue: " + totalRevenue + "€");
+        verify(printer).print("Beverage sales report:");
+        verify(printer).print("TEA: " + teaCount);
+        verify(printer).print("CHOCOLATE: " + chocolateCount);
+        verify(printer).print("COFFEE: " + coffeeCount);
+        verify(printer).print("ORANGE_JUICE: " + orangeJuiceCount);
+        verify(printer).print("Total revenue: " + totalRevenue + "€");
     }
 
     private void mockBeverageQuantityChecker(Order order, boolean shortage) {

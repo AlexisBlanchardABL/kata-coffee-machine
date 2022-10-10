@@ -79,12 +79,6 @@ class CoffeeMachineTest {
     }
 
     @Test
-    void should_deliver_given_message_to_drink_maker() {
-        coffeeMachine.send("message-content");
-        verify(drinkMaker).receive("M:message-content");
-    }
-
-    @Test
     void should_throw_an_exception_when_ordering_an_orange_juice_extra_hot() {
         assertThrows(IllegalArgumentException.class, () -> coffeeMachine.order(new Order(Drink.ORANGE_JUICE, 0, 1.0f, true)));
     }

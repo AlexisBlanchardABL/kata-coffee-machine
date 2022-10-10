@@ -1,10 +1,11 @@
+import java.text.MessageFormat;
 import java.util.EnumSet;
 import java.util.Objects;
 
 import static utils.MathUtils.subtractFloats;
 
 public class CoffeeMachine {
-    private static final String SHORTAGE_NOTIFICATION_MESSAGE = " shortage, a notification has been sent to the maintenance company";
+    private static final String SHORTAGE_NOTIFICATION_MESSAGE = "{0} shortage, a notification has been sent to the maintenance company";
 
     private final SalesRepository salesRepository;
     private final DrinkMaker drinkMaker;
@@ -33,14 +34,14 @@ public class CoffeeMachine {
         }
 
         if (drink.costMoreThan(order.getMoneyAmount())) {
-            send(subtractFloats(drink.getPrice(), order.getMoneyAmount()) + "€ is missing");
+            displayMessage(subtractFloats(drink.getPrice(), order.getMoneyAmount()) + "€ is missing");
             return;
         }
 
         Liquid waterOrMilk = drink.getBase();
         if (isShortageIssue(waterOrMilk)) {
             emailNotifier.notifyMissingDrink(waterOrMilk.name());
-            drinkMaker.receive("M:" + waterOrMilk.name() + SHORTAGE_NOTIFICATION_MESSAGE);
+            displayMessage(MessageFormat.format(SHORTAGE_NOTIFICATION_MESSAGE, waterOrMilk.name()));
             return;
         }
 
@@ -57,7 +58,7 @@ public class CoffeeMachine {
                 .concat(order.isStickNeeded() ? "0" : "");
     }
 
-    public void send(String message) {
+    private void displayMessage(String message) {
         drinkMaker.receive("M:".concat(message));
     }
 

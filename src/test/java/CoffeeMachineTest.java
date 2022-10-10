@@ -9,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,42 +49,32 @@ class CoffeeMachineTest {
 
     static Stream<Arguments> parameters() {
         return Stream.of(
-                Arguments.of(new Order(Drink.COFFEE, 0, 1.0f), false, "C::"),
-                Arguments.of(new Order(Drink.COFFEE, 1, 1.0f), false, "C:1:0"),
-                Arguments.of(new Order(Drink.COFFEE, 2, 0.6f), false, "C:2:0"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 0, 1.0f), false, "H::"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 1, 1.0f), false, "H:1:0"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 2, 0.5f), false, "H:2:0"),
-                Arguments.of(new Order(Drink.TEA, 0, 1.0f), false, "T::"),
-                Arguments.of(new Order(Drink.TEA, 1, 1.0f), false, "T:1:0"),
-                Arguments.of(new Order(Drink.TEA, 2, 0.4f), false, "T:2:0"),
-                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 1.0f), false, "O::"),
+                Arguments.of(Order.of(Drink.COFFEE, 0, 1.0f), false, "C::"),
+                Arguments.of(Order.of(Drink.COFFEE, 1, 1.0f), false, "C:1:0"),
+                Arguments.of(Order.of(Drink.COFFEE, 2, 0.6f), false, "C:2:0"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 1.0f), false, "H::"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 1, 1.0f), false, "H:1:0"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 2, 0.5f), false, "H:2:0"),
+                Arguments.of(Order.of(Drink.TEA, 0, 1.0f), false, "T::"),
+                Arguments.of(Order.of(Drink.TEA, 1, 1.0f), false, "T:1:0"),
+                Arguments.of(Order.of(Drink.TEA, 2, 0.4f), false, "T:2:0"),
+                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 1.0f), false, "O::"),
 
-                Arguments.of(new Order(Drink.COFFEE, 0, 1.0f, true), false, "Ch::"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 1, 1.0f, true), false, "Hh:1:0"),
-                Arguments.of(new Order(Drink.TEA, 2, 0.4f, true), false, "Th:2:0"),
+                Arguments.of(Order.of(Drink.COFFEE, 0, 1.0f, true), false, "Ch::"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 1, 1.0f, true), false, "Hh:1:0"),
+                Arguments.of(Order.of(Drink.TEA, 2, 0.4f, true), false, "Th:2:0"),
 
-                Arguments.of(new Order(Drink.CHOCOLATE, 3, 0.5f), true, "M:MILK" + SHORTAGE_NOTIFICATION_MESSAGE),
-                Arguments.of(new Order(Drink.TEA, 3, 0.4f), true, "M:WATER" + SHORTAGE_NOTIFICATION_MESSAGE),
-                Arguments.of(new Order(Drink.COFFEE, 0, 0.0f), false, "M:0.6€ is missing"),
-                Arguments.of(new Order(Drink.COFFEE, 0, 0.3f), false, "M:0.3€ is missing"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 0, 0.0f), false, "M:0.5€ is missing"),
-                Arguments.of(new Order(Drink.CHOCOLATE, 0, 0.4f), false, "M:0.1€ is missing"),
-                Arguments.of(new Order(Drink.TEA, 0, 0.0f), false, "M:0.4€ is missing"),
-                Arguments.of(new Order(Drink.TEA, 0, 0.35f), false, "M:0.05€ is missing"),
-                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 0.0f), false, "M:0.6€ is missing"),
-                Arguments.of(new Order(Drink.ORANGE_JUICE, 0, 0.15f), false, "M:0.45€ is missing")
+                Arguments.of(Order.of(Drink.CHOCOLATE, 3, 0.5f), true, "M:MILK" + SHORTAGE_NOTIFICATION_MESSAGE),
+                Arguments.of(Order.of(Drink.TEA, 3, 0.4f), true, "M:WATER" + SHORTAGE_NOTIFICATION_MESSAGE),
+                Arguments.of(Order.of(Drink.COFFEE, 0, 0.0f), false, "M:0.6€ is missing"),
+                Arguments.of(Order.of(Drink.COFFEE, 0, 0.3f), false, "M:0.3€ is missing"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.0f), false, "M:0.5€ is missing"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.4f), false, "M:0.1€ is missing"),
+                Arguments.of(Order.of(Drink.TEA, 0, 0.0f), false, "M:0.4€ is missing"),
+                Arguments.of(Order.of(Drink.TEA, 0, 0.35f), false, "M:0.05€ is missing"),
+                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.0f), false, "M:0.6€ is missing"),
+                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.15f), false, "M:0.45€ is missing")
         );
-    }
-
-    @Test
-    void should_throw_an_exception_when_ordering_an_orange_juice_extra_hot() {
-        assertThrows(IllegalArgumentException.class, () -> coffeeMachine.order(new Order(Drink.ORANGE_JUICE, 0, 1.0f, true)));
-    }
-
-    @Test
-    void should_throw_an_exception_when_ordering_an_orange_juice_with_sugar() {
-        assertThrows(IllegalArgumentException.class, () -> coffeeMachine.order(new Order(Drink.ORANGE_JUICE, 1, 1.0f)));
     }
 
     @Test
@@ -119,20 +108,21 @@ class CoffeeMachineTest {
     }
 
     @Test
-    void given_an_order_with_no_money_when_displaying_the_report_it_should_not_be_printed_in_the_report() {
+    void orderWithNoAmount() {
         // Given
-        coffeeMachine.order(new Order(Drink.COFFEE, 0, 0));
+        coffeeMachine.order(Order.of(Drink.COFFEE, 0, 0));
 
         // When
         coffeeMachine.displayReport();
 
         // Then
         assertReport(0, 0, 0, 0, 0f);
+        verify(drinkMaker).receive("M:0.6€ is missing");
     }
 
     private void order(Drink ...drinks) {
         for (Drink drink : drinks) {
-            coffeeMachine.order(new Order(drink, 0, drink.getPrice()));
+            coffeeMachine.order(Order.of(drink, 0, drink.getPrice()));
         }
     }
 

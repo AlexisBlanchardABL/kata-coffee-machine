@@ -2,8 +2,6 @@ import java.text.MessageFormat;
 import java.util.EnumSet;
 import java.util.Objects;
 
-import static utils.MathUtils.subtractFloats;
-
 public class CoffeeMachine {
     private static final String SHORTAGE_NOTIFICATION_MESSAGE = "{0} shortage, a notification has been sent to the maintenance company";
 
@@ -29,12 +27,9 @@ public class CoffeeMachine {
 
     public void order(Order order) {
         Drink drink = order.getDrink();
-        if (Drink.ORANGE_JUICE.equals(drink) && (order.isExtraHot() || order.getSugar() > 0)) {
-            throw new IllegalArgumentException("You won't dare.. Will you?");
-        }
 
-        if (drink.costMoreThan(order.getMoneyAmount())) {
-            displayMessage(subtractFloats(drink.getPrice(), order.getMoneyAmount()) + "€ is missing");
+        if (order.missingAmount() > 0) {
+            displayMessage(order.missingAmount() + "€ is missing");
             return;
         }
 
@@ -46,16 +41,7 @@ public class CoffeeMachine {
         }
 
         salesRepository.save(order);
-        drinkMaker.receive(buildCommand(order));
-    }
-
-    private String buildCommand(Order order) {
-        return order.getDrink().getCode()
-                .concat(order.isExtraHot() ? "h" : "")
-                .concat(":")
-                .concat(order.getSugar() == 0 ? "" : String.valueOf(order.getSugar()))
-                .concat(":")
-                .concat(order.isStickNeeded() ? "0" : "");
+        drinkMaker.receive(order.buildInstruction());
     }
 
     private void displayMessage(String message) {

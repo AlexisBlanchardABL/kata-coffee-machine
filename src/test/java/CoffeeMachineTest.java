@@ -1,3 +1,4 @@
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +38,15 @@ class CoffeeMachineTest {
         );
     }
 
+    @AfterEach
+    void tearDown() {
+        verifyNoMoreInteractions(
+                drinkMaker,
+                emailNotifier,
+                printer
+        );
+    }
+
     static Stream<Arguments> parameters() {
         return Stream.of(
                 Arguments.of(Order.of(Drink.COFFEE, 0, 1.0f), "C::"),
@@ -69,9 +79,7 @@ class CoffeeMachineTest {
     @MethodSource({"parameters"})
     void ordering(Order order, String command) {
         coffeeMachine.order(order);
-        verifyNoInteractions(emailNotifier);
         verify(drinkMaker).receive(command);
-        verifyNoMoreInteractions(drinkMaker);
     }
 
 
@@ -92,10 +100,11 @@ class CoffeeMachineTest {
                 emailNotifier,
                 printer
         );
+
         coffeeMachine.order(order);
-        verifyMissingDrinkNotification(order.getDrink());
+
+        verify(emailNotifier).notifyMissingDrink(order.getDrink().getBase().name());
         verify(drinkMaker).receive(command);
-        verifyNoMoreInteractions(drinkMaker);
     }
 
     @Test
@@ -124,6 +133,7 @@ class CoffeeMachineTest {
 
         // Then
         assertReport(2, 2, 2, 2, 4.2f);
+        verify(drinkMaker, times(8)).receive(anyString());
     }
 
     @Test
@@ -152,11 +162,6 @@ class CoffeeMachineTest {
         verify(printer).print("COFFEE: " + coffeeCount);
         verify(printer).print("ORANGE_JUICE: " + orangeJuiceCount);
         verify(printer).print("Total revenue: " + totalRevenue + "€");
-    }
-
-    private void verifyMissingDrinkNotification(Drink drink) {
-        verify(emailNotifier).notifyMissingDrink(drink.getBase().name());
-        verifyNoMoreInteractions(emailNotifier);
     }
 
 }

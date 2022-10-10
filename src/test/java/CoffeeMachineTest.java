@@ -62,19 +62,9 @@ class CoffeeMachineTest {
 
                 Arguments.of(Order.of(Drink.COFFEE, 0, 1.0f, true), "Ch::"),
                 Arguments.of(Order.of(Drink.CHOCOLATE, 1, 1.0f, true), "Hh:1:0"),
-                Arguments.of(Order.of(Drink.TEA, 2, 0.4f, true), "Th:2:0"),
-
-                Arguments.of(Order.of(Drink.COFFEE, 0, 0.0f), "M:0.6€ is missing"),
-                Arguments.of(Order.of(Drink.COFFEE, 0, 0.3f), "M:0.3€ is missing"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.0f), "M:0.5€ is missing"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.4f), "M:0.1€ is missing"),
-                Arguments.of(Order.of(Drink.TEA, 0, 0.0f), "M:0.4€ is missing"),
-                Arguments.of(Order.of(Drink.TEA, 0, 0.35f), "M:0.05€ is missing"),
-                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.0f), "M:0.6€ is missing"),
-                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.15f), "M:0.45€ is missing")
+                Arguments.of(Order.of(Drink.TEA, 2, 0.4f, true), "Th:2:0")
         );
     }
-
     @ParameterizedTest(name = "when ordering {0}, it should send command {1}")
     @MethodSource({"parameters"})
     void ordering(Order order, String command) {
@@ -89,7 +79,6 @@ class CoffeeMachineTest {
                 Arguments.of(Order.of(Drink.TEA, 3, 0.4f), "M:WATER" + SHORTAGE_NOTIFICATION_MESSAGE)
         );
     }
-
     @ParameterizedTest(name = "when ordering {0}, and there is a shortage of the base, it should send command {1}")
     @MethodSource({"shortageParameters"})
     void orderingWhenThereIsAShortage(Order order, String command) {
@@ -104,6 +93,34 @@ class CoffeeMachineTest {
         coffeeMachine.order(order);
 
         verify(emailNotifier).notifyMissingDrink(order.getDrink().getBase().name());
+        verify(drinkMaker).receive(command);
+    }
+
+    static Stream<Arguments> moneyAmountLowerThanDrinkPriceParameters() {
+        return Stream.of(
+                Arguments.of(Order.of(Drink.COFFEE, 0, 0.0f), "M:0.6€ is missing"),
+                Arguments.of(Order.of(Drink.COFFEE, 0, 0.3f), "M:0.3€ is missing"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.0f), "M:0.5€ is missing"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.4f), "M:0.1€ is missing"),
+                Arguments.of(Order.of(Drink.TEA, 0, 0.0f), "M:0.4€ is missing"),
+                Arguments.of(Order.of(Drink.TEA, 0, 0.35f), "M:0.05€ is missing"),
+                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.0f), "M:0.6€ is missing"),
+                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.15f), "M:0.45€ is missing")
+        );
+    }
+    @ParameterizedTest(name = "when ordering {0}, it should send command {1}")
+    @MethodSource({"moneyAmountLowerThanDrinkPriceParameters"})
+    void orderingWhenMoneyAmountIsLowerThanDrinkPrice(Order order, String command) {
+        coffeeMachine = new CoffeeMachine(
+                new SalesRepository(),
+                drinkMaker,
+                NO_BEVERAGE_SHORTAGE,
+                emailNotifier,
+                printer
+        );
+
+        coffeeMachine.order(order);
+
         verify(drinkMaker).receive(command);
     }
 

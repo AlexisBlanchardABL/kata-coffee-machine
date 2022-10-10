@@ -105,14 +105,17 @@ class CoffeeMachineTest {
         // Given
         when(beverageQuantityChecker.isEmpty(anyString())).thenReturn(false);
 
-        orderA(Drink.COFFEE);
-        orderA(Drink.COFFEE);
-        orderA(Drink.TEA);
-        orderA(Drink.TEA);
-        orderA(Drink.ORANGE_JUICE);
-        orderA(Drink.ORANGE_JUICE);
-        orderA(Drink.CHOCOLATE);
-        orderA(Drink.CHOCOLATE);
+        Drink[] drinks = {Drink.COFFEE,
+                Drink.COFFEE,
+                Drink.TEA,
+                Drink.TEA,
+                Drink.ORANGE_JUICE,
+                Drink.ORANGE_JUICE,
+                Drink.CHOCOLATE,
+                Drink.CHOCOLATE};
+        order(
+                drinks
+        );
 
         // When
         coffeeMachine.displayReport();
@@ -133,8 +136,10 @@ class CoffeeMachineTest {
         assertReport(0, 0, 0, 0, 0f);
     }
 
-    private void orderA(Drink drink) {
-        coffeeMachine.order(new Order(drink, 0, drink.getPrice()));
+    private void order(Drink ...drinks) {
+        for (Drink drink : drinks) {
+            coffeeMachine.order(new Order(drink, 0, drink.getPrice()));
+        }
     }
 
     private void assertReport(int teaCount, int chocolateCount, int coffeeCount, int orangeJuiceCount, float totalRevenue) {

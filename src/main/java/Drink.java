@@ -1,4 +1,4 @@
-import utils.MathUtils;
+import static utils.MathUtils.subtractFloats;
 
 public enum Drink {
     TEA("T", 0.4f, Liquid.WATER),
@@ -24,11 +24,12 @@ public enum Drink {
         return price;
     }
 
-    public boolean costMoreThan(float money) {
-        return MathUtils.subtractFloats(price, money) > 0;
-    }
-
     public Liquid getBase() {
         return base;
     }
+
+    float missingAmount(float moneyAmount) {
+        return subtractFloats(price, moneyAmount);
+    }
+
 }

@@ -1,5 +1,3 @@
-import static utils.MathUtils.subtractFloats;
-
 public class Order {
     private final Drink drink;
     private final int sugar;
@@ -33,10 +31,6 @@ public class Order {
         return sugar > 0;
     }
 
-    public float getMoneyAmount() {
-        return moneyAmount;
-    }
-
     public Drink getDrink() {
         return drink;
     }
@@ -59,7 +53,7 @@ public class Order {
     }
 
     float missingAmount() {
-        return subtractFloats(drink.getPrice(), getMoneyAmount());
+        return drink.missingAmount(moneyAmount);
     }
 
 }

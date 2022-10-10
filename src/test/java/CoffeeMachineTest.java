@@ -14,13 +14,13 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CoffeeMachineTest {
     private static final String SHORTAGE_NOTIFICATION_MESSAGE = " shortage, a notification has been sent to the maintenance company";
+    private static final BeverageQuantityChecker NO_BEVERAGE_SHORTAGE = drink -> false;
+    private static final BeverageQuantityChecker BEVERAGE_SHORTAGE = drink -> true;
 
     private CoffeeMachine coffeeMachine;
 
     @Mock
     private DrinkMaker drinkMaker;
-    @Mock
-    private BeverageQuantityChecker beverageQuantityChecker;
     @Mock
     private EmailNotifier emailNotifier;
     @Mock
@@ -31,63 +31,82 @@ class CoffeeMachineTest {
         coffeeMachine = new CoffeeMachine(
                 new SalesRepository(),
                 drinkMaker,
-                beverageQuantityChecker,
+                NO_BEVERAGE_SHORTAGE,
                 emailNotifier,
                 printer
         );
     }
 
-    @ParameterizedTest(name = "when ordering {0} with shortage({1}), it should send command {2}")
+    static Stream<Arguments> parameters() {
+        return Stream.of(
+                Arguments.of(Order.of(Drink.COFFEE, 0, 1.0f), "C::"),
+                Arguments.of(Order.of(Drink.COFFEE, 1, 1.0f), "C:1:0"),
+                Arguments.of(Order.of(Drink.COFFEE, 2, 0.6f), "C:2:0"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 1.0f), "H::"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 1, 1.0f), "H:1:0"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 2, 0.5f), "H:2:0"),
+                Arguments.of(Order.of(Drink.TEA, 0, 1.0f), "T::"),
+                Arguments.of(Order.of(Drink.TEA, 1, 1.0f), "T:1:0"),
+                Arguments.of(Order.of(Drink.TEA, 2, 0.4f), "T:2:0"),
+                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 1.0f), "O::"),
+
+                Arguments.of(Order.of(Drink.COFFEE, 0, 1.0f, true), "Ch::"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 1, 1.0f, true), "Hh:1:0"),
+                Arguments.of(Order.of(Drink.TEA, 2, 0.4f, true), "Th:2:0"),
+
+                Arguments.of(Order.of(Drink.COFFEE, 0, 0.0f), "M:0.6€ is missing"),
+                Arguments.of(Order.of(Drink.COFFEE, 0, 0.3f), "M:0.3€ is missing"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.0f), "M:0.5€ is missing"),
+                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.4f), "M:0.1€ is missing"),
+                Arguments.of(Order.of(Drink.TEA, 0, 0.0f), "M:0.4€ is missing"),
+                Arguments.of(Order.of(Drink.TEA, 0, 0.35f), "M:0.05€ is missing"),
+                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.0f), "M:0.6€ is missing"),
+                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.15f), "M:0.45€ is missing")
+        );
+    }
+
+    @ParameterizedTest(name = "when ordering {0}, it should send command {1}")
     @MethodSource({"parameters"})
-    void ordering(Order order, boolean shortage, String command) {
-        mockBeverageQuantityChecker(order, shortage);
+    void ordering(Order order, String command) {
         coffeeMachine.order(order);
-        verifyEmailNotifierInteractions(shortage, order.getDrink());
+        verifyNoInteractions(emailNotifier);
         verify(drinkMaker).receive(command);
         verifyNoMoreInteractions(drinkMaker);
     }
 
-    static Stream<Arguments> parameters() {
+
+    static Stream<Arguments> shortageParameters() {
         return Stream.of(
-                Arguments.of(Order.of(Drink.COFFEE, 0, 1.0f), false, "C::"),
-                Arguments.of(Order.of(Drink.COFFEE, 1, 1.0f), false, "C:1:0"),
-                Arguments.of(Order.of(Drink.COFFEE, 2, 0.6f), false, "C:2:0"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 1.0f), false, "H::"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 1, 1.0f), false, "H:1:0"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 2, 0.5f), false, "H:2:0"),
-                Arguments.of(Order.of(Drink.TEA, 0, 1.0f), false, "T::"),
-                Arguments.of(Order.of(Drink.TEA, 1, 1.0f), false, "T:1:0"),
-                Arguments.of(Order.of(Drink.TEA, 2, 0.4f), false, "T:2:0"),
-                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 1.0f), false, "O::"),
-
-                Arguments.of(Order.of(Drink.COFFEE, 0, 1.0f, true), false, "Ch::"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 1, 1.0f, true), false, "Hh:1:0"),
-                Arguments.of(Order.of(Drink.TEA, 2, 0.4f, true), false, "Th:2:0"),
-
-                Arguments.of(Order.of(Drink.CHOCOLATE, 3, 0.5f), true, "M:MILK" + SHORTAGE_NOTIFICATION_MESSAGE),
-                Arguments.of(Order.of(Drink.TEA, 3, 0.4f), true, "M:WATER" + SHORTAGE_NOTIFICATION_MESSAGE),
-                Arguments.of(Order.of(Drink.COFFEE, 0, 0.0f), false, "M:0.6€ is missing"),
-                Arguments.of(Order.of(Drink.COFFEE, 0, 0.3f), false, "M:0.3€ is missing"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.0f), false, "M:0.5€ is missing"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.4f), false, "M:0.1€ is missing"),
-                Arguments.of(Order.of(Drink.TEA, 0, 0.0f), false, "M:0.4€ is missing"),
-                Arguments.of(Order.of(Drink.TEA, 0, 0.35f), false, "M:0.05€ is missing"),
-                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.0f), false, "M:0.6€ is missing"),
-                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.15f), false, "M:0.45€ is missing")
+                Arguments.of(Order.of(Drink.CHOCOLATE, 3, 0.5f), "M:MILK" + SHORTAGE_NOTIFICATION_MESSAGE),
+                Arguments.of(Order.of(Drink.TEA, 3, 0.4f), "M:WATER" + SHORTAGE_NOTIFICATION_MESSAGE)
         );
     }
 
+    @ParameterizedTest(name = "when ordering {0}, and there is a shortage of the base, it should send command {1}")
+    @MethodSource({"shortageParameters"})
+    void orderingWhenThereIsAShortage(Order order, String command) {
+        coffeeMachine = new CoffeeMachine(
+                new SalesRepository(),
+                drinkMaker,
+                BEVERAGE_SHORTAGE,
+                emailNotifier,
+                printer
+        );
+        coffeeMachine.order(order);
+        verifyMissingDrinkNotification(order.getDrink());
+        verify(drinkMaker).receive(command);
+        verifyNoMoreInteractions(drinkMaker);
+    }
+
     @Test
-    void given_no_orders_were_made_when_displaying_the_report_it_should_print_it_on_the_console() {
+    void emptyReportWhenNoOrderWasMade() {
         coffeeMachine.displayReport();
         assertReport(0, 0, 0, 0, 0.0f);
     }
 
     @Test
-    void given_some_orders_were_made_when_displaying_the_report_it_should_print_it_on_the_console() {
+    void shouldPrintReport() {
         // Given
-        when(beverageQuantityChecker.isEmpty(anyString())).thenReturn(false);
-
         Drink[] drinks = {Drink.COFFEE,
                 Drink.COFFEE,
                 Drink.TEA,
@@ -135,20 +154,9 @@ class CoffeeMachineTest {
         verify(printer).print("Total revenue: " + totalRevenue + "€");
     }
 
-    private void mockBeverageQuantityChecker(Order order, boolean shortage) {
-        Drink drink = order.getDrink();
-        if (Drink.ORANGE_JUICE != drink && !drink.costMoreThan(order.getMoneyAmount())) {
-            when(beverageQuantityChecker.isEmpty(drink.getBase().name())).thenReturn(shortage);
-        }
-    }
-
-    private void verifyEmailNotifierInteractions(boolean shortage, Drink drink) {
-        if (shortage) {
-            verify(emailNotifier).notifyMissingDrink(drink.getBase().name());
-            verifyNoMoreInteractions(emailNotifier);
-        } else {
-            verifyNoInteractions(emailNotifier);
-        }
+    private void verifyMissingDrinkNotification(Drink drink) {
+        verify(emailNotifier).notifyMissingDrink(drink.getBase().name());
+        verifyNoMoreInteractions(emailNotifier);
     }
 
 }

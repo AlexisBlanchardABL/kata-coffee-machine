@@ -22,7 +22,7 @@ public class Order {
         this.moneyAmount = moneyAmount;
         this.extraHot = extraHot;
 
-        if (Drink.ORANGE_JUICE.equals(drink) && (this.extraHot || this.sugar > 0)) {
+        if (ColdDrink.ORANGE_JUICE.equals(drink) && (this.extraHot || this.sugar > 0)) {
             throw new IllegalArgumentException("You won't dare.. Will you?");
         }
     }
@@ -44,8 +44,8 @@ public class Order {
     }
 
     String buildInstruction() {
-        return getDrink().getCode()
-                .concat(extraHot ? "h" : "")
+        return getDrink()
+                .drinkInstruction(extraHot)
                 .concat(":")
                 .concat(sugar == 0 ? "" : String.valueOf(sugar))
                 .concat(":")

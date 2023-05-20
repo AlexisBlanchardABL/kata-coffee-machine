@@ -49,20 +49,20 @@ class CoffeeMachineTest {
 
     static Stream<Arguments> parameters() {
         return Stream.of(
-                Arguments.of(Order.of(Drink.COFFEE, 0, 1.0f), "C::"),
-                Arguments.of(Order.of(Drink.COFFEE, 1, 1.0f), "C:1:0"),
-                Arguments.of(Order.of(Drink.COFFEE, 2, 0.6f), "C:2:0"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 1.0f), "H::"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 1, 1.0f), "H:1:0"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 2, 0.5f), "H:2:0"),
-                Arguments.of(Order.of(Drink.TEA, 0, 1.0f), "T::"),
-                Arguments.of(Order.of(Drink.TEA, 1, 1.0f), "T:1:0"),
-                Arguments.of(Order.of(Drink.TEA, 2, 0.4f), "T:2:0"),
-                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 1.0f), "O::"),
+                Arguments.of(Order.of(HotDrink.COFFEE, 0, 1.0f), "C::"),
+                Arguments.of(Order.of(HotDrink.COFFEE, 1, 1.0f), "C:1:0"),
+                Arguments.of(Order.of(HotDrink.COFFEE, 2, 0.6f), "C:2:0"),
+                Arguments.of(Order.of(HotDrink.CHOCOLATE, 0, 1.0f), "H::"),
+                Arguments.of(Order.of(HotDrink.CHOCOLATE, 1, 1.0f), "H:1:0"),
+                Arguments.of(Order.of(HotDrink.CHOCOLATE, 2, 0.5f), "H:2:0"),
+                Arguments.of(Order.of(HotDrink.TEA, 0, 1.0f), "T::"),
+                Arguments.of(Order.of(HotDrink.TEA, 1, 1.0f), "T:1:0"),
+                Arguments.of(Order.of(HotDrink.TEA, 2, 0.4f), "T:2:0"),
+                Arguments.of(Order.of(ColdDrink.ORANGE_JUICE, 0, 1.0f), "O::"),
 
-                Arguments.of(Order.of(Drink.COFFEE, 0, 1.0f, true), "Ch::"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 1, 1.0f, true), "Hh:1:0"),
-                Arguments.of(Order.of(Drink.TEA, 2, 0.4f, true), "Th:2:0")
+                Arguments.of(Order.of(HotDrink.COFFEE, 0, 1.0f, true), "Ch::"),
+                Arguments.of(Order.of(HotDrink.CHOCOLATE, 1, 1.0f, true), "Hh:1:0"),
+                Arguments.of(Order.of(HotDrink.TEA, 2, 0.4f, true), "Th:2:0")
         );
     }
     @ParameterizedTest(name = "when ordering {0}, it should send command {1}")
@@ -75,8 +75,8 @@ class CoffeeMachineTest {
 
     static Stream<Arguments> shortageParameters() {
         return Stream.of(
-                Arguments.of(Order.of(Drink.CHOCOLATE, 3, 0.5f), "M:MILK" + SHORTAGE_NOTIFICATION_MESSAGE),
-                Arguments.of(Order.of(Drink.TEA, 3, 0.4f), "M:WATER" + SHORTAGE_NOTIFICATION_MESSAGE)
+                Arguments.of(Order.of(HotDrink.CHOCOLATE, 3, 0.5f), "M:MILK" + SHORTAGE_NOTIFICATION_MESSAGE),
+                Arguments.of(Order.of(HotDrink.TEA, 3, 0.4f), "M:WATER" + SHORTAGE_NOTIFICATION_MESSAGE)
         );
     }
     @ParameterizedTest(name = "when ordering {0}, and there is a shortage of the base, it should send command {1}")
@@ -98,14 +98,14 @@ class CoffeeMachineTest {
 
     static Stream<Arguments> moneyAmountLowerThanDrinkPriceParameters() {
         return Stream.of(
-                Arguments.of(Order.of(Drink.COFFEE, 0, 0.0f), "M:0.6€ is missing"),
-                Arguments.of(Order.of(Drink.COFFEE, 0, 0.3f), "M:0.3€ is missing"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.0f), "M:0.5€ is missing"),
-                Arguments.of(Order.of(Drink.CHOCOLATE, 0, 0.4f), "M:0.1€ is missing"),
-                Arguments.of(Order.of(Drink.TEA, 0, 0.0f), "M:0.4€ is missing"),
-                Arguments.of(Order.of(Drink.TEA, 0, 0.35f), "M:0.05€ is missing"),
-                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.0f), "M:0.6€ is missing"),
-                Arguments.of(Order.of(Drink.ORANGE_JUICE, 0, 0.15f), "M:0.45€ is missing")
+                Arguments.of(Order.of(HotDrink.COFFEE, 0, 0.0f), "M:0.6€ is missing"),
+                Arguments.of(Order.of(HotDrink.COFFEE, 0, 0.3f), "M:0.3€ is missing"),
+                Arguments.of(Order.of(HotDrink.CHOCOLATE, 0, 0.0f), "M:0.5€ is missing"),
+                Arguments.of(Order.of(HotDrink.CHOCOLATE, 0, 0.4f), "M:0.1€ is missing"),
+                Arguments.of(Order.of(HotDrink.TEA, 0, 0.0f), "M:0.4€ is missing"),
+                Arguments.of(Order.of(HotDrink.TEA, 0, 0.35f), "M:0.05€ is missing"),
+                Arguments.of(Order.of(ColdDrink.ORANGE_JUICE, 0, 0.0f), "M:0.6€ is missing"),
+                Arguments.of(Order.of(ColdDrink.ORANGE_JUICE, 0, 0.15f), "M:0.45€ is missing")
         );
     }
     @ParameterizedTest(name = "when ordering {0}, it should send command {1}")
@@ -133,14 +133,14 @@ class CoffeeMachineTest {
     @Test
     void shouldPrintReport() {
         // Given
-        Drink[] drinks = {Drink.COFFEE,
-                Drink.COFFEE,
-                Drink.TEA,
-                Drink.TEA,
-                Drink.ORANGE_JUICE,
-                Drink.ORANGE_JUICE,
-                Drink.CHOCOLATE,
-                Drink.CHOCOLATE};
+        Drink[] drinks = {HotDrink.COFFEE,
+                HotDrink.COFFEE,
+                HotDrink.TEA,
+                HotDrink.TEA,
+                ColdDrink.ORANGE_JUICE,
+                ColdDrink.ORANGE_JUICE,
+                HotDrink.CHOCOLATE,
+                HotDrink.CHOCOLATE};
         order(
                 drinks
         );
@@ -156,7 +156,7 @@ class CoffeeMachineTest {
     @Test
     void orderWithNoAmount() {
         // Given
-        coffeeMachine.order(Order.of(Drink.COFFEE, 0, 0));
+        coffeeMachine.order(Order.of(HotDrink.COFFEE, 0, 0));
 
         // When
         coffeeMachine.displayReport();
@@ -166,9 +166,9 @@ class CoffeeMachineTest {
         verify(drinkMaker).receive("M:0.6€ is missing");
     }
 
-    private void order(Drink ...drinks) {
+    private void order(Drink...drinks) {
         for (Drink drink : drinks) {
-            coffeeMachine.order(Order.of(drink, 0, drink.getPrice()));
+            coffeeMachine.order(Order.of(drink, 0, Float.MAX_VALUE));
         }
     }
 

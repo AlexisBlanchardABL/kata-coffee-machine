@@ -1,6 +1,7 @@
 import java.text.MessageFormat;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class CoffeeMachine {
     private static final String SHORTAGE_NOTIFICATION_MESSAGE = "{0} shortage, a notification has been sent to the maintenance company";
@@ -40,7 +41,7 @@ public class CoffeeMachine {
             return;
         }
 
-        salesRepository.save(order);
+        salesRepository.save(order.getDrink());
         drinkMaker.receive(order.buildInstruction());
     }
 
@@ -50,7 +51,12 @@ public class CoffeeMachine {
 
     public void displayReport() {
         printer.print("Beverage sales report:");
-        EnumSet.allOf(Drink.class).forEach((drink) -> printer.print(drink.name() + ": " + salesRepository.getDrinkCount(drink)));
+        Stream.concat(
+                EnumSet.allOf(ColdDrink.class).stream(),
+                EnumSet.allOf(HotDrink.class).stream()
+        )
+                .toList()
+                .forEach((drink) -> printer.print(drink.name() + ": " + salesRepository.getDrinkCount(drink)));
         printer.print("Total revenue: " + salesRepository.getEarnedMoney() + "€");
     }
 

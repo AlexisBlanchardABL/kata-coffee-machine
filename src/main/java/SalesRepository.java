@@ -1,25 +1,29 @@
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class SalesRepository {
-    private final Map<Drink, Integer> beverageSales = new HashMap<>();
-    private float earnedMoney = 0f;
+    private final List<Drink> sales;
 
     public SalesRepository() {
-        EnumSet.allOf(Drink.class).forEach((drink) -> beverageSales.put(drink, 0));
+        sales = new ArrayList<>();
     }
 
-    public void save(Order order) {
-        beverageSales.computeIfPresent(order.getDrink(), (drink, count) -> count+1);
-        earnedMoney += order.getDrink().getPrice();
+    public void save(Drink drink) {
+        sales.add(drink);
     }
 
-    public Integer getDrinkCount(Drink drink) {
-        return beverageSales.get(drink);
+    public long getDrinkCount(Drink drink) {
+        return sales.stream()
+                .filter(d -> d.equals(drink))
+                .count();
     }
 
     public float getEarnedMoney() {
-        return earnedMoney;
+        return sales.stream()
+                .reduce(
+                        0f,
+                        (amount, drink) -> drink.pricePlus(amount),
+                        Float::sum
+                );
     }
+
 }

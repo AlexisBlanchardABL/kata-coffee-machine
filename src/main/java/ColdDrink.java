@@ -1,7 +1,7 @@
 import static utils.MathUtils.subtractFloats;
 
 public enum ColdDrink implements Drink {
-    ORANGE_JUICE("O", 0.6f, null);
+    ORANGE_JUICE("O", 0.6f, Liquid.NONE);
 
     private final String code;
     private final float price;

@@ -1,6 +1,5 @@
 import java.text.MessageFormat;
 import java.util.EnumSet;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 public class CoffeeMachine {
@@ -34,8 +33,8 @@ public class CoffeeMachine {
             return;
         }
 
-        Liquid waterOrMilk = drink.getBase();
-        if (isShortageIssue(waterOrMilk)) {
+        if (Drink.hasLiquidBase(drink) && beverageQuantityChecker.isEmpty(drink.getBase().name())) {
+            Liquid waterOrMilk = drink.getBase();
             emailNotifier.notifyMissingDrink(waterOrMilk.name());
             displayMessage(MessageFormat.format(SHORTAGE_NOTIFICATION_MESSAGE, waterOrMilk.name()));
             return;
@@ -58,10 +57,6 @@ public class CoffeeMachine {
                 .toList()
                 .forEach((drink) -> printer.print(drink.name() + ": " + salesRepository.getDrinkCount(drink)));
         printer.print("Total revenue: " + salesRepository.getEarnedMoney() + "€");
-    }
-
-    private boolean isShortageIssue(Liquid base) {
-        return Objects.nonNull(base) && beverageQuantityChecker.isEmpty(base.name());
     }
 
 }

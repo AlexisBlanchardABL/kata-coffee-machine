@@ -8,7 +8,7 @@ public class Order {
         return new Order(drink, sugar, moneyAmount);
     }
 
-    public static Order of(Drink drink, int sugar, float moneyAmount, boolean extraHot) {
+    public static Order of(HotDrink drink, int sugar, float moneyAmount, boolean extraHot) {
         return new Order(drink, sugar, moneyAmount, extraHot);
     }
 
@@ -22,8 +22,8 @@ public class Order {
         this.moneyAmount = moneyAmount;
         this.extraHot = extraHot;
 
-        if (ColdDrink.ORANGE_JUICE.equals(drink) && (this.extraHot || this.sugar > 0)) {
-            throw new IllegalArgumentException("You won't dare.. Will you?");
+        if (ColdDrink.ORANGE_JUICE.equals(drink) && (this.sugar > 0)) {
+            throw new IllegalArgumentException("Orange juice is sweet enough..");
         }
     }
 
@@ -44,7 +44,7 @@ public class Order {
     }
 
     String buildInstruction() {
-        return getDrink()
+        return drink
                 .drinkInstruction(extraHot)
                 .concat(":")
                 .concat(sugar == 0 ? "" : String.valueOf(sugar))

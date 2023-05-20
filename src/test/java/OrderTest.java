@@ -17,11 +17,6 @@ class OrderTest {
     }
 
     @Test
-    void orderingAnOrangeJuiceExtraHot() {
-        assertThrows(IllegalArgumentException.class, () -> Order.of(ColdDrink.ORANGE_JUICE, 0, 1.0f, true));
-    }
-
-    @Test
     void orderingAnOrangeJuiceWithSugar() {
         assertThrows(IllegalArgumentException.class, () -> Order.of(ColdDrink.ORANGE_JUICE, 1, 1.0f));
     }

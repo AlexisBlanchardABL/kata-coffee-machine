@@ -1,62 +1,62 @@
+import java.text.MessageFormat;
 import java.util.EnumSet;
-import java.util.Objects;
-
-import static utils.MathUtils.subtractFloats;
+import java.util.stream.Stream;
 
 public class CoffeeMachine {
-    private static final String SHORTAGE_NOTIFICATION_MESSAGE = " shortage, a notification has been sent to the maintenance company";
+    private static final String SHORTAGE_NOTIFICATION_MESSAGE = "{0} shortage, a notification has been sent to the maintenance company";
 
     private final SalesRepository salesRepository;
-    private DrinkMaker drinkMaker;
-    private BeverageQuantityChecker beverageQuantityChecker;
-    private EmailNotifier emailNotifier;
+    private final DrinkMaker drinkMaker;
+    private final BeverageQuantityChecker beverageQuantityChecker;
+    private final EmailNotifier emailNotifier;
+    private final Printer printer;
 
-    public CoffeeMachine(SalesRepository salesRepository) {
+    public CoffeeMachine(
+            SalesRepository salesRepository,
+            DrinkMaker drinkMaker,
+            BeverageQuantityChecker beverageQuantityChecker,
+            EmailNotifier emailNotifier,
+            Printer printer
+    ) {
         this.salesRepository = salesRepository;
+        this.drinkMaker = drinkMaker;
+        this.beverageQuantityChecker = beverageQuantityChecker;
+        this.emailNotifier = emailNotifier;
+        this.printer = printer;
     }
 
     public void order(Order order) {
         Drink drink = order.getDrink();
-        if (Drink.ORANGE_JUICE.equals(drink) && (order.isExtraHot() || order.getSugar() > 0)) {
-            throw new IllegalArgumentException("You won't dare.. Will you?");
-        }
 
-        if (drink.costMoreThan(order.getMoneyAmount())) {
-            send(subtractFloats(drink.getPrice(), order.getMoneyAmount()) + "€ is missing");
+        if (order.missingAmount() > 0) {
+            displayMessage(order.missingAmount() + "€ is missing");
             return;
         }
 
-        Liquid waterOrMilk = drink.getBase();
-        if (isShortageIssue(waterOrMilk)) {
+        if (Drink.hasLiquidBase(drink) && beverageQuantityChecker.isEmpty(drink.getBase().name())) {
+            Liquid waterOrMilk = drink.getBase();
             emailNotifier.notifyMissingDrink(waterOrMilk.name());
-            drinkMaker.receive("M:" + waterOrMilk.name() + SHORTAGE_NOTIFICATION_MESSAGE);
+            displayMessage(MessageFormat.format(SHORTAGE_NOTIFICATION_MESSAGE, waterOrMilk.name()));
             return;
         }
 
-        salesRepository.save(order);
-        drinkMaker.receive(buildCommand(order));
+        salesRepository.save(order.getDrink());
+        drinkMaker.receive(order.buildInstruction());
     }
 
-    private String buildCommand(Order order) {
-        return order.getDrink().getCode()
-                .concat(order.isExtraHot() ? "h" : "")
-                .concat(":")
-                .concat(order.getSugar() == 0 ? "" : String.valueOf(order.getSugar()))
-                .concat(":")
-                .concat(order.isStickNeeded() ? "0" : "");
-    }
-
-    public void send(String message) {
+    private void displayMessage(String message) {
         drinkMaker.receive("M:".concat(message));
     }
 
     public void displayReport() {
-        System.out.println("Beverage sales report:");
-        EnumSet.allOf(Drink.class).forEach((drink) -> System.out.println(drink.name() + ": " + salesRepository.getDrinkCount(drink)));
-        System.out.println("Total revenue: " + salesRepository.getEarnedMoney() + "€");
+        printer.print("Beverage sales report:");
+        Stream.concat(
+                EnumSet.allOf(ColdDrink.class).stream(),
+                EnumSet.allOf(HotDrink.class).stream()
+        )
+                .toList()
+                .forEach((drink) -> printer.print(drink.name() + ": " + salesRepository.getDrinkCount(drink)));
+        printer.print("Total revenue: " + salesRepository.getEarnedMoney() + "€");
     }
 
-    private boolean isShortageIssue(Liquid base) {
-        return Objects.nonNull(base) && beverageQuantityChecker.isEmpty(base.name());
-    }
 }

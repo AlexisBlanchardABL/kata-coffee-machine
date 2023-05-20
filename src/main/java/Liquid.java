@@ -1,3 +1,5 @@
 public enum Liquid {
-    WATER, MILK
+    WATER,
+    MILK,
+    NONE
 }

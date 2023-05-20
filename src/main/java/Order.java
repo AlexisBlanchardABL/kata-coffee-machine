@@ -1,39 +1,40 @@
 public class Order {
-    private Drink drink;
-    private int sugar;
-    private float moneyAmount;
+    private final Drink drink;
+    private final int sugar;
+    private final float moneyAmount;
     private final boolean extraHot;
 
-    public Order(Drink drink, int sugar, float moneyAmount) {
+    public static Order of(Drink drink, int sugar, float moneyAmount) {
+        return new Order(drink, sugar, moneyAmount);
+    }
+
+    public static Order of(HotDrink drink, int sugar, float moneyAmount, boolean extraHot) {
+        return new Order(drink, sugar, moneyAmount, extraHot);
+    }
+
+    private Order(Drink drink, int sugar, float moneyAmount) {
         this(drink, sugar, moneyAmount, false);
     }
 
-    public Order(Drink drink, int sugar, float moneyAmount, boolean extraHot) {
+    private Order(Drink drink, int sugar, float moneyAmount, boolean extraHot) {
         this.drink = drink;
         this.sugar = sugar;
         this.moneyAmount = moneyAmount;
         this.extraHot = extraHot;
+
+        if (ColdDrink.ORANGE_JUICE.equals(drink) && (this.sugar > 0)) {
+            throw new IllegalArgumentException("Orange juice is sweet enough..");
+        }
     }
 
-    public boolean isStickNeeded() {
+    boolean isStickNeeded() {
         return sugar > 0;
-    }
-
-    public float getMoneyAmount() {
-        return moneyAmount;
     }
 
     public Drink getDrink() {
         return drink;
     }
 
-    public int getSugar() {
-        return sugar;
-    }
-
-    public boolean isExtraHot() {
-        return extraHot;
-    }
 
     @Override
     public String toString() {
@@ -41,4 +42,18 @@ public class Order {
                 (sugar > 1 ? sugar + " sugars" :
                         sugar == 1 ? "1 sugar" : "no sugar");
     }
+
+    String buildInstruction() {
+        return drink
+                .drinkInstruction(extraHot)
+                .concat(":")
+                .concat(sugar == 0 ? "" : String.valueOf(sugar))
+                .concat(":")
+                .concat(isStickNeeded() ? "0" : "");
+    }
+
+    float missingAmount() {
+        return drink.missingAmount(moneyAmount);
+    }
+
 }
